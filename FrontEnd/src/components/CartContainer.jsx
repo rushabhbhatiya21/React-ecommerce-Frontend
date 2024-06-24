@@ -6,22 +6,24 @@ import { setCartItems, getCartTotal, clearCart } from "../redux/feature/cartSlic
 import './CartContainer.css'; // Import the CSS file
 
 const CartContainer = () => {
-  const { totalAmount, items } = useSelector((state) => state.cart);
-  const dispatch = useDispatch();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
-  const [address, setAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
-  const [checkNumber, setCheckNumber] = useState('');
-  const [errors, setErrors] = useState({});
-  const [orderSummary, setOrderSummary] = useState(null);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false); // To disable the button after click
+  const { totalAmount, items } = useSelector((state) => state.cart); // Select cart state from Redux store
+  const dispatch = useDispatch(); // Redux dispatcher
+  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal open/close for checkout form
+  const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false); // State to control order summary modal
+  const [address, setAddress] = useState(''); // State for address input field
+  const [email, setEmail] = useState(''); // State for email input field
+  const [phone, setPhone] = useState(''); // State for phone number input field
+  const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery'); // State for payment method selection
+  const [checkNumber, setCheckNumber] = useState(''); // State for check number input field
+  const [errors, setErrors] = useState({}); // State to store validation errors
+  const [orderSummary, setOrderSummary] = useState(null); // State to store order summary details
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false); // State to disable the confirm order button after click
 
+  // useEffect to fetch cart items from API when component mounts or items state changes
   useEffect(() => {
     if (items.length <= 0) {
       try {
+        // Fetch cart items from API if not already loaded
         api.get('items/cart').then((response) => {
           if (response) {
             dispatch(setCartItems({
@@ -30,12 +32,14 @@ const CartContainer = () => {
           }
         });
       } catch (err) {
-        console.log('failed to get cart', err);
+        console.log('Failed to get cart', err);
       }
     }
+    // Update total cart amount in Redux store
     dispatch(getCartTotal());
   }, [items, dispatch]);
 
+  // Function to validate form inputs
   const validate = () => {
     const errors = {};
     if (!address.trim()) {
@@ -57,16 +61,27 @@ const CartContainer = () => {
     return errors;
   };
 
+  // Function to handle checkout process
   const handleCheckout = async () => {
-    const errors = validate();
-    if (Object.keys(errors).length === 0) {
+    const errors = validate(); // Validate form inputs
+    if (Object.keys(errors).length === 0) { // If no validation errors
       setIsButtonDisabled(true); // Disable the button after click
-      // Proceed with checkout
       try {
-        const payload = { address, email, phone, items, paymentMethod: paymentMethod === 'Check' ? `Check: ${checkNumber}` : paymentMethod, username: localStorage.getItem('username') };
+        // Prepare payload for API request
+        const payload = { 
+          address, 
+          email, 
+          phone, 
+          items, 
+          paymentMethod: paymentMethod === 'Check' ? `Check: ${checkNumber}` : paymentMethod, 
+          username: localStorage.getItem('username') 
+        };
+        // Post cart details to API for saving
         await api.post('items/cart/details', payload);
+        // Post order details to API for placing order
         const response = await api.post('items/cart/order', payload);
         if (response.data.message === 'ok') {
+          // Update order summary details if order placed successfully
           setOrderSummary({
             username: response.data.username,
             orderlist: response.data.orderlist,
@@ -74,20 +89,21 @@ const CartContainer = () => {
             cartvalue: response.data.cartvalue,
             email: response.data.email,
             _id: response.data._id,
-            paymentMethod : response.data.paymentMethod
+            paymentMethod: response.data.paymentMethod
           });
-          setIsOrderSummaryOpen(true);
-          setIsModalOpen(false);
+          setIsOrderSummaryOpen(true); // Open order summary modal
+          setIsModalOpen(false); // Close checkout modal
         }
       } catch (error) {
         console.log('Checkout failed', error);
-        setIsButtonDisabled(false); // Re-enable the button if the checkout fails
+        setIsButtonDisabled(false); // Re-enable the button if checkout fails
       }
     } else {
-      setErrors(errors);
+      setErrors(errors); // Set validation errors
     }
   };
 
+  // Function to close checkout modal and reset form fields
   const handleModalClose = () => {
     setIsModalOpen(false);
     setAddress('');
@@ -98,12 +114,14 @@ const CartContainer = () => {
     setErrors({});
   };
 
+  // Function to close order summary modal and clear cart in Redux store
   const handleOrderSummaryClose = () => {
     setIsOrderSummaryOpen(false);
     setOrderSummary(null);
     dispatch(clearCart());
   };
 
+  // Render empty cart message if no items in cart
   if (items.length === 0) {
     return (
       <>
@@ -114,20 +132,21 @@ const CartContainer = () => {
     );
   }
 
+  // Render cart items and checkout button
   return (
-    <div style={{marginTop:'25px'}}>
+    <div style={{ marginTop: '25px' }}>
       {items.map((item) => {
-        return <CartItem key={item.id} {...item} dispatch={dispatch}/>;
+        return <CartItem key={item.id} {...item} dispatch={dispatch} />;
       })}
       <footer>
-        <hr style={{width:"70vw"}} />
-        <div style={{display:'flex',width:"98vw",justifyContent:'center'}}>
+        <hr style={{ width: "70vw" }} />
+        <div style={{ display: 'flex', width: "98vw", justifyContent: 'center' }}>
           <h4
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginLeft:"25px",
-              width:"68vw"
+              marginLeft: "25px",
+              width: "68vw"
             }}
           >
             Total <span>${totalAmount}.00</span>
@@ -197,11 +216,10 @@ const CartContainer = () => {
                 <option value="Cash on Delivery">Cash on Delivery</option>
                 <option value="Check">Check</option>
               </select>
-            <button className="btn btn-primary abs-btn" onClick={handleCheckout} disabled={isButtonDisabled}>
-              Confirm Order
-            </button>
+              <button className="btn btn-primary abs-btn" onClick={handleCheckout} disabled={isButtonDisabled}>
+                Confirm Order
+              </button>
             </div>
-            
           </div>
         </div>
       )}
