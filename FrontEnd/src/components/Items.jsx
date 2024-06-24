@@ -14,7 +14,7 @@ const Items = () => {
 
   // Effect to fetch cart items and total on component mount or when cartItems changes
   useEffect(() => {
-    if (cartItems.length <= 0) {
+    if (localStorage.getItem('isFetched') == null || localStorage.getItem('isFetched') == "false") {
       try {
         api.get('items/cart').then((response) => {
           if (response) {

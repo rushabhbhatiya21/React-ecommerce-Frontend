@@ -16,6 +16,13 @@ function Navbar() {
     window.location.href = '/signin'; // Redirect to signin page
   };
 
+  useEffect(()=> {
+
+    return () => {
+      localStorage.setItem('isFetched',"false")
+    }
+  }, [])
+
   return (
     <nav className="navbar">
       {/* Logo with navigation to home on click */}

@@ -21,7 +21,7 @@ const CartContainer = () => {
 
   // useEffect to fetch cart items from API when component mounts or items state changes
   useEffect(() => {
-    if (items.length <= 0) {
+    if (localStorage.getItem('isFetched')==null || localStorage.getItem('isFetched')=="false") {
       try {
         // Fetch cart items from API if not already loaded
         api.get('items/cart').then((response) => {
